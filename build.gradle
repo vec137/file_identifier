@@ -21,10 +21,10 @@ tasks.withType(Test) {
 javadoc {
 	if (project.hasProperty('fullDocs')) {
         options.memberLevel = JavadocMemberLevel.PRIVATE
-        println("Private methods enabled")
+        println("Private shown in docs")
     } else {
         options.memberLevel = JavadocMemberLevel.PROTECTED
-        println("Private methods disabled")
+        println("Private not shown in docs")
     }
     options.encoding = 'UTF-8'
     options.charSet = 'UTF-8'
