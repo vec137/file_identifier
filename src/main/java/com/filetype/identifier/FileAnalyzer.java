@@ -75,6 +75,11 @@ public class FileAnalyzer {
 		}
 	}
 
+	/**
+	 * Загружает базу данных
+	 *
+	 * @return Список сигнатур {@link SignatureInfo}
+	 */
 	private List<SignatureInfo> loadSignatures() {
 		try (InputStream is = getClass().getResourceAsStream("/signatures.db");
 				BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
@@ -102,6 +107,14 @@ public class FileAnalyzer {
 		}
 	}
 
+	/**
+	 * Побайтовое сравнение заголовка файла с сигнатурой
+	 *
+	 * @param fileHeader байты из заголовка файла
+	 * @param signature  массив байтов магических чисел
+	 * @return {@code true}, если заголовок файла содержит указанную сигнатуру,
+	 *         иначе {@code false}
+	 */
 	private boolean bytesMatch(byte[] fileHeader, byte[] signature) {
 		if (signature.length > fileHeader.length)
 			return false;
@@ -112,6 +125,12 @@ public class FileAnalyzer {
 		return true;
 	}
 
+	/**
+	 * Парсит строку в байты
+	 * 
+	 * @param s строка с байтами
+	 * @return Массив байтов
+	 */
 	private byte[] hexStrToByteArr(String s) {
 		int len = s.length();
 		byte[] data = new byte[len / 2];
