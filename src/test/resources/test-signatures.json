@@ -1,0 +1,18 @@
+{
+  "png": {
+    "signs": ["0,89504E47"],
+    "mime": "image/png"
+  },
+  "jpg": {
+    "signs": ["0,FFD8FF"],
+    "mime": "image/jpeg"
+  },
+  "jpeg": {
+    "signs": ["0,FFD8FF"],
+    "mime": "image/jpeg"
+  },
+  "txt": {
+    "signs": ["3,414243"],
+    "mime": "text/plain"
+  }
+}
