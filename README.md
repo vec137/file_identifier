@@ -11,6 +11,7 @@
 - log4j-core:2.24.1
 - junit-jupiter-api:5.11.3
 - junit-jupiter-engine:5.11.3
+- junit-platform-launcher:1.11.3
 
 Для сборки:
 
