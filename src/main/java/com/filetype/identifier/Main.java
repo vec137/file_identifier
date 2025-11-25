@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 /**
  * Главный класс для управления процессом и взаимодействия с
@@ -52,9 +53,8 @@ public class Main {
 	 */
 	private static String userChoice(List<String> extensions) {
 		System.out.println("Найдено несколько расширений:");
-		for (int i = 0; i < extensions.size(); i++) {
-			System.out.printf("  %d: .%s\n", i + 1, extensions.get(i));
-		}
+		IntStream.range(0, extensions.size())
+				.forEach(i -> System.out.printf("  %d: .%s\n", i + 1, extensions.get(i)));
 
 		Scanner scanner = new Scanner(System.in);
 		int choice = -1;

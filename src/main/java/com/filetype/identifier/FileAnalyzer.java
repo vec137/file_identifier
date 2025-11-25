@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Загрузка базы данных и анализ файла
@@ -48,30 +49,24 @@ public class FileAnalyzer {
 		try (InputStream is = Files.newInputStream(filePath)) {
 			byte[] fileHeader = is.readNBytes(512);
 
-			int bestMatchLength = 0;
-			Set<String> bestMatches = new HashSet<>();
+			Map<Integer, List<String>> matched = signatureDB.stream()
+					.filter(sig -> bytesMatch(fileHeader, sig.signatureBytes()))
+					.collect(Collectors.groupingBy(
+							sig -> sig.signatureBytes().length,
+							Collectors.mapping(SignatureInfo::extension, Collectors.toList())));
 
-			for (SignatureInfo sigInfo : signatureDB) {
-				byte[] signature = sigInfo.signatureBytes();
-				int currentLength = signature.length;
-
-				if (bytesMatch(fileHeader, signature)) {
-					if (currentLength > bestMatchLength) {
-						bestMatchLength = currentLength;
-						bestMatches.clear();
-						bestMatches.add(sigInfo.extension());
-					} else if (currentLength == bestMatchLength) {
-						bestMatches.add(sigInfo.extension());
-					}
-				}
-			}
-
-			if (bestMatches.isEmpty()) {
+			if (matched.isEmpty()) {
 				logger.warn("Для файла '{}' не найдено совпадений.", filePath);
 				return Collections.emptyList();
 			} else {
-				logger.info("Лучшее совпадение ({} байт): {}", bestMatchLength, bestMatches);
-				return new ArrayList<>(bestMatches);
+				int bestMatchLength = matched.keySet().stream()
+						.max(Integer::compareTo)
+						.orElse(0);
+				List<String> bestMatch = matched.get(bestMatchLength).stream()
+						.distinct()
+						.collect(Collectors.toList());
+				logger.info("Лучшее совпадение ({} байт): {}", bestMatchLength, bestMatch);
+				return bestMatch;
 			}
 
 		} catch (Exception e) {
@@ -81,25 +76,30 @@ public class FileAnalyzer {
 	}
 
 	private List<SignatureInfo> loadSignatures() {
-		List<SignatureInfo> signatures = new ArrayList<>();
 		try (InputStream is = getClass().getResourceAsStream("/signatures.db");
 				BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
 
-			String line;
-			while ((line = reader.readLine()) != null) {
-				if (!line.isBlank() && !line.startsWith("#")) {
-					String[] parts = line.split(";", 3);
-					if (parts.length == 3) {
-						byte[] sigBytes = hexStrToByteArr(parts[1].trim());
-						signatures.add(new SignatureInfo(parts[0].trim(), sigBytes, parts[2].trim()));
-					}
-				}
-			}
+			List<SignatureInfo> signatures = reader.lines()
+					.filter(line -> !line.isBlank() && !line.startsWith("#"))
+					.map(line -> line.split(";", 3))
+					.filter(parts -> parts.length == 3)
+					.map(parts -> {
+						try {
+							return new SignatureInfo(parts[0].trim(), hexStrToByteArr(parts[1].trim()),
+									parts[2].trim());
+						} catch (Exception e) {
+							logger.warn("Ошибка парсинга: {}", Arrays.toString(parts));
+							return null;
+						}
+					})
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
 			logger.info("База из {} сигнатур успешно загружена.", signatures.size());
+			return signatures;
 		} catch (Exception e) {
 			logger.error("Не удалось загрузить базу сигнатур.", e);
+			return Collections.emptyList();
 		}
-		return signatures;
 	}
 
 	private boolean bytesMatch(byte[] fileHeader, byte[] signature) {
