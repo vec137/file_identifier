@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Главный класс для управления процессом и взаимодействия с
@@ -15,14 +17,20 @@ import java.util.stream.IntStream;
  */
 public class Main {
 
+	private static final Logger logger = LogManager.getLogger(Main.class);
+
 	/**
 	 * Главный метод класса, осуществляет взаимодействие с пользователем
 	 *
 	 * @param args путь к файлу должен быть первым элементом
 	 */
 	public static void main(String[] args) {
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			logger.info("Приложение завершило работу");
+		}));
 		if (args.length == 0) {
-			System.err.println("E: Не указан путь к файлу.");
+			logger.error("Попытка запуска без аргументов");
+			System.err.println("E: Не указан путь к файлу");
 			System.err.println("Пример использования: java -jar app.jar <файл>");
 			System.exit(1);
 		}
@@ -32,13 +40,16 @@ public class Main {
 		List<String> extensions = analyzer.identify(filePath);
 
 		if (extensions.isEmpty()) {
+			logger.warn("Тип файла не удалось определить для: {}", filePath);
 			System.out.println("Не удалось определить тип файла");
 		} else {
 			String chosenExtension;
 			if (extensions.size() == 1) {
 				chosenExtension = extensions.get(0);
+				logger.info("Определено единственное расширение: .{}", chosenExtension);
 				System.out.println("Определено расширение файла: ." + chosenExtension);
 			} else {
+				logger.info("Найдено несколько вариантов: {}", extensions);
 				chosenExtension = userChoice(extensions);
 			}
 			restoreExtension(filePath, chosenExtension);
@@ -70,10 +81,13 @@ public class Main {
 				System.err.println("E: Получено не число");
 				System.out.println("Для отмены нажмите Ctrl+D");
 			} catch (NoSuchElementException e) {
+				logger.info("Ввод отменен пользователем (EOF)");
 				System.out.println("\nВвод отменен");
 				System.exit(0);
 			}
 		}
+		String selected = extensions.get(choice - 1);
+		logger.info("Пользователь выбрал расширение: .{}", selected);
 		return extensions.get(choice - 1);
 	}
 
@@ -91,8 +105,10 @@ public class Main {
 		Path targetPath = srcPath.resolveSibling(baseName + "." + extension);
 		try {
 			Files.move(srcPath, targetPath);
+			logger.info("Файл переименован: {} -> {}", srcPath, targetPath);
 			System.out.println("Файл восстановлен: " + targetPath);
 		} catch (IOException e) {
+			logger.error("Ошибка при переименовании файла: {}", e.getMessage());
 			System.err.println("E: Не удалось переименовать файл: " + e.getMessage());
 		}
 	}
